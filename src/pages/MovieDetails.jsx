@@ -82,7 +82,7 @@ export default function MovieDetails() {
     }
 
     try {
-      await axios.post('http://localhost:5000/api/bookings', {
+      await axios.post('https://diplomback.onrender.com/api/bookings', {
         title: movie?.title || 'Неизвестный фильм',
         movieTitle: movie?.title || 'Неизвестный фильм',
         movieId: movie?.id,
