@@ -21,3 +21,7 @@ body {
 .container-centered {
   @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
 }
+
+.g-text-input__content{
+  border-width:0
+}

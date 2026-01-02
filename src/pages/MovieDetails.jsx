@@ -3,9 +3,28 @@ import { useParams, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 
+import {
+  Card,
+  Text,
+  Button,
+  TextInput,
+  Label,
+  Flex,
+  Icon,
+  Loader,
+  TabProvider,
+  TabList,
+  Tab,
+  TabPanel,
+} from '@gravity-ui/uikit';
+
+import { ArrowLeft, Star } from '@gravity-ui/icons';
+
 const TMDB_API_KEY = "09d13e03c0c446ac654cd31df8281f63";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w1280";
+const POSTER_BASE_URL = "https://image.tmdb.org/t/p/w780";
+const ACTOR_IMAGE_BASE = "https://image.tmdb.org/t/p/w185";
 const YOUTUBE_BASE = "https://www.youtube.com/embed/";
 
 export default function MovieDetails() {
@@ -25,20 +44,18 @@ export default function MovieDetails() {
         const [detailsRes, creditsRes, videosRes] = await Promise.all([
           fetch(`${TMDB_BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}&language=ru-RU`),
           fetch(`${TMDB_BASE_URL}/movie/${id}/credits?api_key=${TMDB_API_KEY}`),
-          fetch(`${TMDB_BASE_URL}/movie/${id}/videos?api_key=${TMDB_API_KEY}&language=ru-RU`)
+          fetch(`${TMDB_BASE_URL}/movie/${id}/videos?api_key=${TMDB_API_KEY}&language=ru-RU`),
         ]);
 
-        if (!detailsRes.ok || !creditsRes.ok || !videosRes.ok) {
-          throw new Error('Failed to fetch movie data');
-        }
-
-        const details = await detailsRes.json();
-        const credits = await creditsRes.json();
-        const videos = await videosRes.json();
+        const [details, creditsData, videosData] = await Promise.all([
+          detailsRes.json(),
+          creditsRes.json(),
+          videosRes.json(),
+        ]);
 
         setMovie(details);
-        setCredits(credits);
-        setVideos(videos);
+        setCredits(creditsData);
+        setVideos(videosData);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching movie details:', err);
@@ -65,39 +82,23 @@ export default function MovieDetails() {
     }
 
     try {
-      console.log('Отправляем бронь:', {
-  title: movie?.title,
-  movieId: movie?.id,
-  date: new Date().toISOString(),
-  seats: Number(formData.seats),
-  name: formData.name || user.email,
-});
-try {
-  await axios.post('https://diplomback.onrender.com/api/bookings', {
-    title: movie?.title || 'Неизвестный фильм',
-    movieTitle: movie?.title || 'Неизвестный фильм', // на случай, если в модели movieTitle
-    movieId: movie?.id,
-    date: new Date().toISOString(),
-    seats: Number(formData.seats),
-    name: formData.name || user.email || 'Анонимный пользователь',
-  }, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
-  });
-
-  setBookingStatus('Бронь успешно создана!');
-  setFormData({ name: '', seats: 1 });
-} catch (err) {
-  console.error('Booking error:', err.response?.data || err.message);
-  setBookingStatus(err.response?.data?.error || 'Ошибка при бронировании');
-}
+      await axios.post('http://localhost:5000/api/bookings', {
+        title: movie?.title || 'Неизвестный фильм',
+        movieTitle: movie?.title || 'Неизвестный фильм',
+        movieId: movie?.id,
+        date: new Date().toISOString(),
+        seats: Number(formData.seats),
+        name: formData.name || user.email || 'Анонимный пользователь',
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
       setBookingStatus('Бронь успешно создана!');
       setFormData({ name: '', seats: 1 });
     } catch (err) {
-      console.error('Booking error:', err.response?.data || err.message);
       const errorMsg = err.response?.data?.error || 'Ошибка при бронировании. Попробуйте позже';
       setBookingStatus(errorMsg);
     }
@@ -105,195 +106,222 @@ try {
 
   if (loading) {
     return (
-      <div className="container-centered py-32 text-center">
-        <div className="text-3xl">Загрузка фильма...</div>
-      </div>
+      <Flex center className="py-32">
+        <Loader size="l" />
+        <Text variant="header-2" className="ml-4">Загрузка фильма...</Text>
+      </Flex>
     );
   }
 
   if (!movie) {
     return (
-      <div className="container-centered py-32 text-center">
-        <div className="text-3xl text-primary">Фильм не найден</div>
-      </div>
+      <Flex center className="py-32">
+        <Text variant="header-2" color="danger">Фильм не найден</Text>
+      </Flex>
     );
   }
 
   const trailer = videos?.results?.find(v => v.type === "Trailer" && v.site === "YouTube");
+  const rating = movie.vote_average ? parseFloat(movie.vote_average.toFixed(1)) : 0;
+  const isHighRating = rating > 7.0;
 
-  const tabs = [
-    { id: 'about', label: 'О фильме' },
-    { id: 'actors', label: 'Актёры' },
-    { id: 'trailer', label: 'Трейлер' },
-    { id: 'booking', label: 'Бронирование' },
-  ];
+  const posterUrl = movie.backdrop_path
+    ? `${IMAGE_BASE_URL}${movie.backdrop_path}`
+    : movie.poster_path
+    ? `${POSTER_BASE_URL}${movie.poster_path}`
+    : 'https://via.placeholder.com/1280x720?text=Нет+изображения';
 
   return (
-    <div className="container-centered py-8">
-      {/* Кнопка "Назад" — теперь правильно выровнена */}
-      <Link 
-        to="/movies" 
-        className="inline-flex items-center gap-3 text-text-secondary hover:text-primary text-lg mb-10 transition font-medium"
-      >
-        <span className="text-2xl">←</span>
-        Назад к фильмам
+    <div className="py-8 max-w-7xl mx-auto px-4">
+      {/* Добавляем keyframes для анимации */}
+      <style jsx>{`
+        @keyframes pulse-glow {
+          0% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0.7); transform: scale(1); }
+          70% { box-shadow: 0 0 20px 10px rgba(255, 204, 0, 0); transform: scale(1.05); }
+          100% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0); transform: scale(1); }
+        }
+        .high-rating-animation {
+          animation: pulse-glow 3s infinite ease-in-out;
+        }
+      `}</style>
+
+      {/* Кнопка "Назад" */}
+      <Link to="/movies" className="inline-flex items-center gap-3 mb-10">
+        <Icon data={ArrowLeft} size={24} />
+        <Text variant="header-1">Назад к фильмам</Text>
       </Link>
 
-      {/* Постер + информация */}
+      {/* Основная информация */}
       <div className="grid lg:grid-cols-3 gap-12 mb-16 items-start">
         <div className="lg:col-span-1 flex justify-center">
-          <img
-            src={
-              movie.backdrop_path 
-                ? `${IMAGE_BASE_URL}${movie.backdrop_path}` 
-                : movie.poster_path 
-                ? `${IMAGE_BASE_URL.replace('w1280', 'w780')}${movie.poster_path}`
-                : 'https://via.placeholder.com/1280x720?text=Нет+изображения'
-            }
-            alt={movie.title}
-            className="w-full max-w-4xl rounded-2xl shadow-2xl"
-          />
+          <Card view="raised" className="overflow-hidden">
+            <img
+              src={posterUrl}
+              alt={movie.title}
+              className="w-full h-auto object-cover rounded-2xl"
+            />
+          </Card>
         </div>
 
         <div className="lg:col-span-2">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 text-center lg:text-left">
+          <Text variant="display-3" className="mb-8 text-center lg:text-left">
             {movie.title}
-          </h1>
+          </Text>
 
-          <div className="flex flex-col items-center lg:items-start gap-8 mb-8">
-            <div className="bg-primary text-black text-5xl font-bold w-32 h-32 rounded-full flex items-center justify-center shadow-2xl">
-              {movie.vote_average ? movie.vote_average.toFixed(1) : '—'}
+          <Flex gap={8} align="center" justify="center" direction={{ xs: 'column', lg: 'row' }} className="mb-8">
+            {/* Красивый рейтинг с прозрачным фоном и анимацией */}
+            <div
+              className={`flex w-[150px] items-center justify-center gap-2 px-6 py-4 rounded-full border-4 border-[#ffcc00] bg-black/50 backdrop-blur-sm ${isHighRating ? 'high-rating-animation' : ''}`}
+              style={{ minWidth: '140px' }}
+            >
+              <Icon data={Star} size={32} style={{ color: '#ffcc00' }} />
+              <span className="text-4xl font-bold" style={{ color: '#ffcc00' }}>
+                {rating || '—'}
+              </span>
             </div>
-            <div className="text-text-secondary text-xl text-center lg:text-left space-y-2">
-              <p>{movie.release_date?.split('-')[0] || '—'}</p>
-              <p>{movie.runtime ? `${movie.runtime} мин` : '—'}</p>
-            </div>
-          </div>
 
-          <div className="flex flex-wrap justify-center lg:justify-start gap-3 mb-8">
+            <Flex direction="column" gap={2} align="start" lg={{ align: 'start' }}>
+              <Text variant="body-3" color="secondary">{movie.release_date?.split('-')[0] || '—'}</Text>
+              <Text variant="body-3" color="secondary">{movie.runtime ? `${movie.runtime} мин` : '—'}</Text>
+            </Flex>
+          </Flex>
+
+          {/* Жанры */}
+          <Flex gap={2} wrap className="mb-8 justify-center lg:justify-start">
             {movie.genres?.map(g => (
-              <span key={g.id} className="bg-bg-secondary px-5 py-2 rounded-full text-sm">
+              <span key={g.id} className="px-4 py-2 bg-[#333] rounded-full text-sm">
                 {g.name}
               </span>
-            )) || <span className="text-text-secondary">Жанры не указаны</span>}
-          </div>
+            ))}
+          </Flex>
 
-          <p className="text-lg leading-relaxed text-text-secondary text-center lg:text-left">
+          <Text variant="body-3" color="secondary" className="leading-relaxed text-center lg:text-left">
             {movie.overview || 'Описание отсутствует.'}
-          </p>
+          </Text>
         </div>
       </div>
 
       {/* Вкладки */}
-      <nav className="border-b border-gray-800 mb-12">
-        <ul className="flex flex-wrap justify-center gap-8 -mb-px">
-          {tabs.map(tab => (
-            <li key={tab.id}>
-              <button
-                onClick={() => setActiveTab(tab.id)}
-                className={`pb-4 px-1 text-xl font-medium transition relative ${
-                  activeTab === tab.id
-                    ? 'text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-1 after:bg-primary'
-                    : 'text-text-secondary hover:text-white'
-                }`}
-              >
-                {tab.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <TabProvider value={activeTab} onUpdate={setActiveTab}>
+        <TabList size="xl" className="mb-12">
+          <Tab value="about">О фильме</Tab>
+          <Tab value="actors">Актёры</Tab>
+          <Tab value="trailer">Трейлер</Tab>
+          <Tab value="booking">Бронирование</Tab>
+        </TabList>
 
-      {/* Контент вкладок */}
-      <div className="max-w-5xl mx-auto">
-        {activeTab === 'about' && (
-          <div className="text-lg text-text-secondary space-y-4 text-center lg:text-left">
-            <p>{movie.overview || 'Полное описание отсутствует.'}</p>
-            {movie.tagline && (
-              <p className="text-2xl italic text-primary mt-8 text-center lg:text-left">«{movie.tagline}»</p>
-            )}
-          </div>
-        )}
+        <div className="max-w-5xl mx-auto">
+          <TabPanel value="about">
+            <Flex direction="column" gap={6} align="center" lg={{ align: 'start' }}>
+              <Text variant="body-3" color="secondary">
+                {movie.overview || 'Полное описание отсутствует.'}
+              </Text>
+              {movie.tagline && (
+                <Text variant="header-2" color="warning" className="italic text-center lg:text-left">
+                  «{movie.tagline}»
+                </Text>
+              )}
+            </Flex>
+          </TabPanel>
 
-        {activeTab === 'actors' && credits?.cast && credits.cast.length > 0 && (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-8 justify-center">
-            {credits.cast.slice(0, 16).map(actor => (
-              <div key={actor.id} className="text-center">
-                <img
-                  src={
-                    actor.profile_path 
-                      ? `${IMAGE_BASE_URL.replace('w1280', 'w185')}${actor.profile_path}`
-                      : 'https://via.placeholder.com/185x278?text=Нет+фото'
-                  }
-                  alt={actor.name}
-                  className="w-full rounded-xl shadow-lg mb-3"
-                />
-                <p className="font-medium truncate">{actor.name}</p>
-                <p className="text-sm text-text-secondary truncate">{actor.character || 'Роль не указана'}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeTab === 'trailer' && trailer && (
-          <div className="aspect-video rounded-2xl overflow-hidden shadow-2xl max-w-4xl mx-auto">
-            <iframe
-              src={`${YOUTUBE_BASE}${trailer.key}?rel=0`}
-              allowFullScreen
-              className="w-full h-full"
-              title="Трейлер фильма"
-            ></iframe>
-          </div>
-        )}
-
-        {activeTab === 'booking' && (
-          <div className="max-w-2xl mx-auto bg-bg-secondary p-10 rounded-3xl shadow-2xl">
-            <h2 className="text-3xl font-bold mb-8 text-center">Бронирование билетов</h2>
-
-            {bookingStatus && (
-              <div className={`text-center text-xl mb-6 py-4 rounded-lg ${
-                bookingStatus.includes('успешно') 
-                  ? 'bg-green-900/50 text-green-300' 
-                  : 'bg-red-900/50 text-primary'
-              }`}>
-                {bookingStatus}
+          <TabPanel value="actors">
+            {credits?.cast?.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-8">
+                {credits.cast.slice(0, 16).map(actor => (
+                  <div key={actor.id} className="text-center">
+                    <Card view="raised" className="overflow-hidden mb-3">
+                      <img
+                        src={
+                          actor.profile_path
+                            ? `${ACTOR_IMAGE_BASE}${actor.profile_path}`
+                            : 'https://via.placeholder.com/185x278?text=Нет+фото'
+                        }
+                        alt={actor.name}
+                        className="w-full h-auto rounded-xl"
+                      />
+                    </Card>
+                    <Text variant="subheader-1" ellipsis>{actor.name}</Text>
+                    <Text variant="body-2" color="secondary" ellipsis>{actor.character || 'Роль не указана'}</Text>
+                  </div>
+                ))}
               </div>
             )}
+          </TabPanel>
 
-            <form onSubmit={handleBooking} className="space-y-8">
-              <input
-                type="text"
-                placeholder="Ваше имя (необязательно)"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-6 py-5 bg-bg-card rounded-xl text-gray-700 placeholder-text-secondary focus:outline-none focus:ring-4 focus:ring-primary/50"
-              />
-
-              <div>
-                <label className="block text-text-secondary mb-3 text-lg text-center">
-                  Количество мест
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={formData.seats}
-                  onChange={(e) => setFormData({ ...formData, seats: e.target.value })}
-                  required
-                  className="text-gray-700 w-full px-6 py-5 bg-bg-card rounded-xl  focus:outline-none focus:ring-4 focus:ring-primary/50"
+          <TabPanel value="trailer">
+            {trailer && (
+              <div className="aspect-video rounded-2xl overflow-hidden shadow-2xl max-w-4xl mx-auto">
+                <iframe
+                  src={`${YOUTUBE_BASE}${trailer.key}?rel=0`}
+                  allowFullScreen
+                  className="w-full h-full"
+                  title="Трейлер фильма"
                 />
               </div>
+            )}
+          </TabPanel>
 
-              <button
-                type="submit"
-                className="w-full bg-primary text-black py-6 rounded-xl text-2xl font-bold hover:bg-primary-dark transition transform hover:scale-105 shadow-2xl"
-              >
-                Забронировать билеты
-              </button>
-            </form>
-          </div>
-        )}
-      </div>
+          <TabPanel value="booking">
+            <Card view="filled" theme="dark" className="max-w-2xl mx-auto p-10">
+              <Text variant="header-2" className="mb-8 text-center">Бронирование билетов</Text>
+
+              {bookingStatus && (
+                <div className={`text-center text-xl mb-6 py-4 rounded-lg ${
+                  bookingStatus.includes('успешно') || bookingStatus.includes('создана')
+                    ? 'bg-green-900/50 text-green-300'
+                    : 'bg-red-900/50 text-red-300'
+                }`}>
+                  {bookingStatus}
+                </div>
+              )}
+
+              <form onSubmit={handleBooking}>
+                <Flex direction="column" gap={6}>
+                  <div>
+                    <Label>Ваше имя (необязательно)</Label>
+                    <TextInput
+                      size="xl"
+                      placeholder="Введите имя"
+                      value={formData.name}
+                      onUpdate={(value) => setFormData({ ...formData, name: value })}
+                      controlProps={{
+                        style: { backgroundColor: '#1a1a1a', borderColor: '#444' }
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Количество мест</Label>
+                    <TextInput
+                      type="number"
+                      size="xl"
+                      min={1}
+                      max={20}
+                      value={formData.seats}
+                      onUpdate={(val) => {
+                        const num = Number(val);
+                        setFormData({ ...formData, seats: isNaN(num) ? 1 : Math.max(1, num) });
+                      }}
+                      controlProps={{
+                        style: { backgroundColor: '#1a1a1a', borderColor: '#444' }
+                      }}
+                    />
+                  </div>
+
+                  <Button
+                    view="action"
+                    size="xl"
+                    type="submit"
+                    style={{ backgroundColor: '#ffcc00', color: '#000' }}
+                  >
+                    Забронировать билеты
+                  </Button>
+                </Flex>
+              </form>
+            </Card>
+          </TabPanel>
+        </div>
+      </TabProvider>
     </div>
   );
 }

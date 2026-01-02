@@ -24,7 +24,7 @@ export default function BookingHistory() {
           return;
         }
 
-        const res = await axios.get('https://diplomback.onrender.com/api/bookings', {
+        const res = await axios.get('http://localhost:5000/api/bookings', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setBookings(res.data);

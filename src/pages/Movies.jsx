@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import MovieCard from '../components/MovieCard';
+import { Button } from '@gravity-ui/uikit';
+
 
 const TMDB_API_KEY = "09d13e03c0c446ac654cd31df8281f63"; // ← Замени на свой ключ
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
@@ -48,26 +50,22 @@ export default function Movies() {
   };
 
   return (
-    <div className="container-centered py-12">
-      <h1 className="text-4xl md:text-5xl font-bold mb-12 text-center">Все фильмы</h1>
+  <div className="w-full px-4 sm:px-6 lg:px-8 py-12">
+    <h1 className="text-4xl md:text-5xl font-bold text-center mb-12">Все фильмы</h1>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 justify-center">
-        {movies.map(movie => (
-          <MovieCard key={movie.id} movie={movie} size="medium" />
-        ))}
-      </div>
-
-      {hasMore && (
-        <div className="text-center mt-16">
-          <button
-            onClick={loadMore}
-            disabled={loading}
-            className="bg-primary px-10 py-4 rounded-xl text-xl font-bold hover:bg-primary-dark transition disabled:opacity-50"
-          >
-            {loading ? 'Загрузка...' : 'Показать ещё'}
-          </button>
-        </div>
-      )}
+    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+      {movies.map(movie => (
+        <MovieCard key={movie.id} movie={movie} size="medium" />
+      ))}
     </div>
-  );
+
+    {hasMore && (
+      <div className="text-center mt-16">
+        <Button size="xl" view="outlined-action" onClick={loadMore} disabled={loading} selected>
+          {loading ? 'Загрузка...' : 'Показать ещё'}
+        </Button>
+      </div>
+    )}
+  </div>
+);
 }

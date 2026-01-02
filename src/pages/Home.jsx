@@ -4,7 +4,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import MovieCard from "../components/MovieCard";
 
-const TMDB_API_KEY = "09d13e03c0c446ac654cd31df8281f63"; // ← Вставь свой ключ сюда
+const TMDB_API_KEY = "09d13e03c0c446ac654cd31df8281f63";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
@@ -77,19 +77,18 @@ export default function Home() {
     ],
   };
 
-  if (loading)
+ if (loading) {
     return (
-      <div className="container py-20 text-center text-3xl">
-        Загрузка лучших фильмов...
+      <div className="w-full py-32 text-center">
+        <h2 className="text-4xl font-bold">Загрузка лучших фильмов...</h2>
       </div>
     );
+  }
 
   return (
-    <div className="container-centered py-12">
-      <section className="mb-16">
-        <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">
-          Популярное сейчас
-        </h2>
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-12">
+      <section className="mb-20">
+        <h2 className="text-4xl md:text-5xl font-bold text-center mb-10">Популярное сейчас</h2>
         <Slider {...settings}>
           {popular.slice(0, 20).map((movie) => (
             <div key={movie.id} className="px-2">
@@ -100,9 +99,7 @@ export default function Home() {
       </section>
 
       <section>
-        <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">
-          Топ рейтинга
-        </h2>
+        <h2 className="text-4xl md:text-5xl font-bold text-center mb-10">Топ рейтинга</h2>
         <Slider {...settings}>
           {topRated.slice(0, 20).map((movie) => (
             <div key={movie.id} className="px-2">

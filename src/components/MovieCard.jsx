@@ -1,51 +1,121 @@
 import { Link } from "react-router-dom";
+import {
+  Card,
+  Icon,
+  Text,
+  Label, // ← вот он, правильный компонент
+  Flex,
+  useTheme,
+} from "@gravity-ui/uikit";
+import { Star, Calendar, CirclePlayFill } from "@gravity-ui/icons";
 
 export default function MovieCard({ movie, size = "medium" }) {
+  const theme = useTheme(); // для доступа к цветам темы (dark)
+
   const poster =
-    movie.posterUrlPreview || movie.poster_path
+    movie.posterUrlPreview ||
+    (movie.poster_path
       ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-      : "https://via.placeholder.com/300x450?text=No+Poster";
+      : "https://via.placeholder.com/300x450?text=No+Poster");
+
   const title = movie.title || movie.nameRu || movie.nameEn || "Без названия";
   const year = movie.release_date?.split("-")[0] || movie.year || "—";
   const rating = movie.vote_average || movie.ratingKinopoisk || null;
 
+  const isSmall = size === "small";
+  const isNew = parseInt(year, 10) >= 2026;
+
   return (
-    <Link to={`/movie/${movie.id}`} className="block group">
-      <div className="relative overflow-hidden rounded-xl shadow-card transition-all duration-500 group-hover:scale-105 group-hover:shadow-2xl">
-        <img
-          src={poster}
-          alt={title}
-          className={`w-full object-cover ${
-            size === "small" ? "h-64 md:h-80" : "h-96 md:h-[480px]"
-          }`}
-          loading="lazy"
-        />
+    <Link to={`/movie/${movie.id}`} className="block w-full">
+      <Card
+        view="raised"
+        theme="warning" // жёлтый акцент при ховере (как твой #ffcc00)
+        className="group overflow-hidden"
+        style={{
+          borderRadius: "16px",
+          transition: "all 0.3s ease",
+          transform: "translateY(0)",
+        }}
+      >
+        <div className="relative aspect-[2/3] flex flex-col">
+          {/* Постер */}
+          <img
+            src={poster}
+            alt={title}
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+          {/* Градиентная подложка снизу */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent pointer-events-none" />
 
-        {rating && rating > 0 && (
-          <div className="absolute top-4 left-4 bg-primary text-black text-sm font-bold px-3 py-1.5 rounded-full shadow-lg">
-            {typeof rating === "number" ? rating.toFixed(1) : rating}
+          {/* Рейтинг */}
+          {rating && rating > 0 && (
+            <div className="absolute top-4 left-4">
+              <Label
+                theme="warning" // жёлтый фон
+                size="m" // или "s" для меньшего
+                style={{
+                  backgroundColor: "#ffcc00", // если нужно переопределить
+                  color: "#000",
+                  fontWeight: "bold",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+                }}
+              >
+                <Flex gap={1} align="center">
+                  <Icon data={Star} size={14} />
+                  {typeof rating === "number" ? rating.toFixed(1) : rating}
+                </Flex>
+              </Label>
+            </div>
+          )}
+
+          {isNew && (
+            <div className="absolute top-4 right-4">
+              <Label
+                theme="warning"
+                size="s"
+                style={{
+                  backgroundColor: "#ffcc00",
+                  color: "#000",
+                  fontWeight: "bold",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+                }}
+              >
+                <Flex gap={1} align="center">
+                  <Icon data={CirclePlayFill} size={12} />
+                  NEW
+                </Flex>
+              </Label>
+            </div>
+          )}
+
+          {/* Информация снизу */}
+          <div className="relative z-10 p-5 mt-auto">
+            <Text
+              variant="header-1"
+              color="light"
+              className="line-clamp-2 font-bold"
+              ellipsis
+            >
+              {title}
+            </Text>
+
+            <Flex gap={2} align="center" className="mt-3">
+              <Icon data={Calendar} size={16} className="text-gray-400" />
+              <Text color="secondary" variant="body-2">
+                {year}
+              </Text>
+            </Flex>
           </div>
-        )}
-
-        {year >= 2025 && (
-          <div className="absolute top-4 right-4 bg-secondary text-black text-xs font-bold px-3 py-1 rounded-full">
-            NEW
-          </div>
-        )}
-
-        <div className="absolute bottom-0 left-0 right-0 p-5 text-white translate-y-8 group-hover:translate-y-0 transition-transform duration-500">
-          <h3 className="font-bold text-lg truncate">{title}</h3>
-          <p className="text-text-secondary text-sm mt-1">
-            {year} •{" "}
-            {movie.genres
-              ?.slice(0, 2)
-              .map((g) => g.name || g.genre)
-              .join(", ") || "Жанр"}
-          </p>
         </div>
-      </div>
+
+        {/* Ховер-эффект через group (Gravity UI поддерживает group-hover) */}
+<div
+  className="absolute inset-0 ring-2 ring-[#ffcc00] ring-inset opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl"
+  style={{ boxShadow: '0 8px 32px rgba(255, 204, 0, 0.3)' }}
+/>
+      </Card>
     </Link>
   );
 }
