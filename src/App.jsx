@@ -6,6 +6,7 @@ import Movies from './pages/Movies';
 import MovieDetails from './pages/MovieDetails';
 import BookingHistory from './pages/BookingHistory';
 import Search from './pages/Search';
+import AuthCallback from './components/AuthCallback';
 function App() {
   return (
     <AuthProvider>
@@ -17,6 +18,7 @@ function App() {
             <Route path="movie/:id" element={<MovieDetails />} />
             <Route path="history" element={<BookingHistory />} />
             <Route path="search" element={<Search />} />
+            <Route path="/auth-callback" element={<AuthCallback />} />
           </Route>
         </Routes>
       </Router>
