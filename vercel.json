@@ -7,10 +7,10 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://diplomback-1.onrender.com/api/$1"
+      "destination": "https://diplomback-2.onrender.com/api/$1"
     }
   ],
   "env": {
-    "VITE_API_URL": "https://diplomback-1.onrender.com"
+    "VITE_API_URL": "https://diplomback-2.onrender.com"
   }
 }

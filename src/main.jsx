@@ -13,7 +13,7 @@ let API_URL;
 
 if (import.meta.env.PROD) {
   // Для продакшена - ваш Render/Heroku/Railway URL
-  API_URL = 'https://diplomback-1.onrender.com/'; // ЗАМЕНИТЕ на ваш реальный URL
+  API_URL = 'https://diplomback-2.onrender.com'; // ЗАМЕНИТЕ на ваш реальный URL
 } else {
   // Для разработки
   API_URL = 'http://localhost:5000';
