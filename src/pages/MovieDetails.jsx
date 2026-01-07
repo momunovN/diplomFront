@@ -8,11 +8,10 @@ import {
   Text,
   Button,
   TextInput,
-  Label,
   Flex,
   Icon,
   Loader,
-  Tabs,
+ 
 } from '@gravity-ui/uikit';
 
 import { ArrowLeft, Star } from '@gravity-ui/icons';
@@ -79,7 +78,8 @@ export default function MovieDetails() {
     }
 
     try {
-      await axios.post('/api/bookings', {
+      // Добавьте полный URL к API
+      await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/bookings`, {
         title: movie?.title || 'Неизвестный фильм',
         movieTitle: movie?.title || 'Неизвестный фильм',
         movieId: movie?.id,
@@ -103,7 +103,7 @@ export default function MovieDetails() {
 
   if (loading) {
     return (
-      <Flex center className="py-32">
+      <Flex justifyContent="center" alignItems="center" className="py-32">
         <Loader size="l" />
         <Text variant="header-2" className="ml-4">Загрузка фильма...</Text>
       </Flex>
@@ -112,7 +112,7 @@ export default function MovieDetails() {
 
   if (!movie) {
     return (
-      <Flex center className="py-32">
+      <Flex justifyContent="center" alignItems="center" className="py-32">
         <Text variant="header-2" color="danger">Фильм не найден</Text>
       </Flex>
     );
@@ -128,9 +128,140 @@ export default function MovieDetails() {
     ? `${POSTER_BASE_URL}${movie.poster_path}`
     : 'https://via.placeholder.com/1280x720?text=Нет+изображения';
 
+  // Функция для отображения контента вкладок
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'about':
+        return (
+          <div className="max-w-5xl mx-auto py-6">
+            <Flex direction="column" gap={6} align="center" lg={{ align: 'start' }}>
+              <Text variant="body-3" color="secondary">
+                {movie.overview || 'Полное описание отсутствует.'}
+              </Text>
+              {movie.tagline && (
+                <Text variant="header-2" color="warning" className="italic text-center lg:text-left">
+                  «{movie.tagline}»
+                </Text>
+              )}
+            </Flex>
+          </div>
+        );
+      
+      case 'actors':
+        return (
+          <div className="max-w-5xl mx-auto py-6">
+            {credits?.cast?.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-8">
+                {credits.cast.slice(0, 16).map(actor => (
+                  <div key={actor.id} className="text-center">
+                    <Card view="raised" className="overflow-hidden mb-3">
+                      <img
+                        src={
+                          actor.profile_path
+                            ? `${ACTOR_IMAGE_BASE}${actor.profile_path}`
+                            : 'https://via.placeholder.com/185x278?text=Нет+фото'
+                        }
+                        alt={actor.name}
+                        className="w-full h-auto rounded-xl"
+                      />
+                    </Card>
+                    <Text variant="subheader-1" ellipsis>{actor.name}</Text>
+                    <Text variant="body-2" color="secondary" ellipsis>{actor.character || 'Роль не указана'}</Text>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      
+      case 'trailer':
+        return (
+          <div className="max-w-5xl mx-auto py-6">
+            {trailer && (
+              <div className="aspect-video rounded-2xl overflow-hidden shadow-2xl max-w-4xl mx-auto">
+                <iframe
+                  src={`${YOUTUBE_BASE}${trailer.key}?rel=0`}
+                  allowFullScreen
+                  className="w-full h-full"
+                  title="Трейлер фильма"
+                />
+              </div>
+            )}
+          </div>
+        );
+      
+      case 'booking':
+        return (
+          <div className="max-w-5xl mx-auto py-6">
+            <Card view="filled" theme="dark" className="max-w-2xl mx-auto p-10">
+              <Text variant="header-2" className="mb-8 text-center">Бронирование билетов</Text>
+
+              {bookingStatus && (
+                <div className={`text-center text-xl mb-6 py-4 rounded-lg ${
+                  bookingStatus.includes('успешно') || bookingStatus.includes('создана')
+                    ? 'bg-green-900/50 text-green-300'
+                    : 'bg-red-900/50 text-red-300'
+                }`}>
+                  {bookingStatus}
+                </div>
+              )}
+
+              <form onSubmit={handleBooking}>
+                <Flex direction="column" gap={6}>
+                  <div>
+                    {/* Используем Text как label */}
+                    <Text variant="body-1" className="mb-2 block">Ваше имя (необязательно)</Text>
+                    <TextInput
+                      size="xl"
+                      placeholder="Введите имя"
+                      value={formData.name}
+                      onUpdate={(value) => setFormData({ ...formData, name: value })}
+                      controlProps={{
+                        style: { backgroundColor: '#1a1a1a', borderColor: '#444' }
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <Text variant="body-1" className="mb-2 block">Количество мест</Text>
+                    <TextInput
+                      type="number"
+                      size="xl"
+                      min={1}
+                      max={20}
+                      value={formData.seats}
+                      onUpdate={(val) => {
+                        const num = Number(val);
+                        setFormData({ ...formData, seats: isNaN(num) ? 1 : Math.max(1, num) });
+                      }}
+                      controlProps={{
+                        style: { backgroundColor: '#1a1a1a', borderColor: '#444' }
+                      }}
+                    />
+                  </div>
+
+                  <Button
+                    view="action"
+                    size="xl"
+                    type="submit"
+                    style={{ backgroundColor: '#ffcc00', color: '#000' }}
+                  >
+                    Забронировать билеты
+                  </Button>
+                </Flex>
+              </form>
+            </Card>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="py-8 max-w-7xl mx-auto px-4">
-      <style jsx>{`
+      <style>{`
         @keyframes pulse-glow {
           0% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0.7); transform: scale(1); }
           70% { box-shadow: 0 0 20px 10px rgba(255, 204, 0, 0); transform: scale(1.05); }
@@ -197,126 +328,31 @@ export default function MovieDetails() {
         </div>
       </div>
 
-      {/* Вкладки */}
-      <Tabs activeTab={activeTab} onSelectTab={setActiveTab} size="xl" className="mb-12">
-        <Tabs.Item id="about" title="О фильме">
-          <div className="max-w-5xl mx-auto py-6">
-            <Flex direction="column" gap={6} align="center" lg={{ align: 'start' }}>
-              <Text variant="body-3" color="secondary">
-                {movie.overview || 'Полное описание отсутствует.'}
-              </Text>
-              {movie.tagline && (
-                <Text variant="header-2" color="warning" className="italic text-center lg:text-left">
-                  «{movie.tagline}»
-                </Text>
-              )}
-            </Flex>
-          </div>
-        </Tabs.Item>
-        
-        <Tabs.Item id="actors" title="Актёры">
-          <div className="max-w-5xl mx-auto py-6">
-            {credits?.cast?.length > 0 && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-8">
-                {credits.cast.slice(0, 16).map(actor => (
-                  <div key={actor.id} className="text-center">
-                    <Card view="raised" className="overflow-hidden mb-3">
-                      <img
-                        src={
-                          actor.profile_path
-                            ? `${ACTOR_IMAGE_BASE}${actor.profile_path}`
-                            : 'https://via.placeholder.com/185x278?text=Нет+фото'
-                        }
-                        alt={actor.name}
-                        className="w-full h-auto rounded-xl"
-                      />
-                    </Card>
-                    <Text variant="subheader-1" ellipsis>{actor.name}</Text>
-                    <Text variant="body-2" color="secondary" ellipsis>{actor.character || 'Роль не указана'}</Text>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </Tabs.Item>
-        
-        <Tabs.Item id="trailer" title="Трейлер">
-          <div className="max-w-5xl mx-auto py-6">
-            {trailer && (
-              <div className="aspect-video rounded-2xl overflow-hidden shadow-2xl max-w-4xl mx-auto">
-                <iframe
-                  src={`${YOUTUBE_BASE}${trailer.key}?rel=0`}
-                  allowFullScreen
-                  className="w-full h-full"
-                  title="Трейлер фильма"
-                />
-              </div>
-            )}
-          </div>
-        </Tabs.Item>
-        
-        <Tabs.Item id="booking" title="Бронирование">
-          <div className="max-w-5xl mx-auto py-6">
-            <Card view="filled" theme="dark" className="max-w-2xl mx-auto p-10">
-              <Text variant="header-2" className="mb-8 text-center">Бронирование билетов</Text>
+      {/* Упрощенные вкладки */}
+      <div className="mb-8">
+        <div className="flex border-b border-gray-700 mb-8">
+          {['about', 'actors', 'trailer', 'booking'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-6 py-4 text-lg font-medium transition-colors ${
+                activeTab === tab 
+                  ? 'border-b-2 border-yellow-400 text-yellow-400' 
+                  : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              {tab === 'about' && 'О фильме'}
+              {tab === 'actors' && 'Актёры'}
+              {tab === 'trailer' && 'Трейлер'}
+              {tab === 'booking' && 'Бронирование'}
+            </button>
+          ))}
+        </div>
 
-              {bookingStatus && (
-                <div className={`text-center text-xl mb-6 py-4 rounded-lg ${
-                  bookingStatus.includes('успешно') || bookingStatus.includes('создана')
-                    ? 'bg-green-900/50 text-green-300'
-                    : 'bg-red-900/50 text-red-300'
-                }`}>
-                  {bookingStatus}
-                </div>
-              )}
-
-              <form onSubmit={handleBooking}>
-                <Flex direction="column" gap={6}>
-                  <div>
-                    <Label>Ваше имя (необязательно)</Label>
-                    <TextInput
-                      size="xl"
-                      placeholder="Введите имя"
-                      value={formData.name}
-                      onUpdate={(value) => setFormData({ ...formData, name: value })}
-                      controlProps={{
-                        style: { backgroundColor: '#1a1a1a', borderColor: '#444' }
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Количество мест</Label>
-                    <TextInput
-                      type="number"
-                      size="xl"
-                      min={1}
-                      max={20}
-                      value={formData.seats}
-                      onUpdate={(val) => {
-                        const num = Number(val);
-                        setFormData({ ...formData, seats: isNaN(num) ? 1 : Math.max(1, num) });
-                      }}
-                      controlProps={{
-                        style: { backgroundColor: '#1a1a1a', borderColor: '#444' }
-                      }}
-                    />
-                  </div>
-
-                  <Button
-                    view="action"
-                    size="xl"
-                    type="submit"
-                    style={{ backgroundColor: '#ffcc00', color: '#000' }}
-                  >
-                    Забронировать билеты
-                  </Button>
-                </Flex>
-              </form>
-            </Card>
-          </div>
-        </Tabs.Item>
-      </Tabs>
+        <div className="min-h-[400px]">
+          {renderTabContent()}
+        </div>
+      </div>
     </div>
   );
 }
