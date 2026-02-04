@@ -91,7 +91,7 @@ console.log("Все env переменные:", import.meta.env);
     try {
       const res = await axios.get(`${API_URL}/api/auth/yandex/url`);
   console.log("🔗 Полный Yandex URL:", res.data.url);  // ← Добавь это
-    // window.location.href = res.data.url;  // Закомментируй временно, чтобы не редиректило
+    window.location.href = res.data.url;  // Закомментируй временно, чтобы не редиректило
     } catch (err) {
       console.error('Yandex login error:', err);
       return { success: false, error: 'Ошибка подключения к Яндекс' };
