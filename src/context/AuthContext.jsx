@@ -4,7 +4,7 @@ import axios from 'axios';
 export const AuthContext = createContext();
 
 // Базовый URL из переменных окружения или localhost по умолчанию
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || 'https://diplomback-2.onrender.com';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -90,7 +90,8 @@ console.log("Все env переменные:", import.meta.env);
   const yandexLogin = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/auth/yandex/url`);
-      window.location.href = res.data.url;
+  console.log("🔗 Полный Yandex URL:", res.data.url);  // ← Добавь это
+    // window.location.href = res.data.url;  // Закомментируй временно, чтобы не редиректило
     } catch (err) {
       console.error('Yandex login error:', err);
       return { success: false, error: 'Ошибка подключения к Яндекс' };
