@@ -10,6 +10,11 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+
+
+  console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
+console.log("Все env переменные:", import.meta.env);
+
   // Функция для обновления состояния пользователя
   const updateUser = (userData) => {
     setUser(userData);
@@ -107,6 +112,7 @@ export const AuthProvider = ({ children }) => {
       logout, 
       loading 
     }}>
+      
       {children}
     </AuthContext.Provider>
   );
